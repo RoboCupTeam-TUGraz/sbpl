@@ -1,13 +1,15 @@
 cmake_minimum_required(VERSION 2.8)
-PROJECT( sbpl )
+PROJECT(sbpl)
 
-# version (e.g. for packaging)
-set(SBPL_MAJOR_VERSION 1)
-set(SBPL_MINOR_VERSION 3)
-set(SBPL_PATCH_VERSION 0)
-set(SBPL_VERSION ${SBPL_MAJOR_VERSION}.${SBPL_MINOR_VERSION}.${SBPL_PATCH_VERSION})
+find_package(catkin REQUIRED COMPONENTS
+)
 
-set(CMAKE_BUILD_TYPE Release)
+catkin_package(
+  INCLUDE_DIRS src/include
+  LIBRARIES sbpl
+  #CATKIN_DEPENDS
+  #DEPENDS
+)
 
 include_directories(src/include)
 
@@ -34,44 +36,18 @@ add_library(sbpl SHARED
   src/utils/config.cpp	
   )
 
-set(SBPL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
-set(SBPL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+install(
+  TARGETS sbpl
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
-# support for pkg-config
-set(PKG_NAME "sbpl")
-set(PKG_DESC "The Search Based Planning Library")
-set(PKG_SBPL_LIBS "-lsbpl")
-set(pkg_conf_file_in "${CMAKE_CURRENT_SOURCE_DIR}/sbpl.pc.in")
-set(pkg_conf_file "${PROJECT_BINARY_DIR}/InstallFiles/sbpl.pc")
-configure_file("${pkg_conf_file_in}" "${pkg_conf_file}" @ONLY)
-install(FILES ${pkg_conf_file} DESTINATION lib/pkgconfig/ COMPONENT pkgconfig)
+install(DIRECTORY src/include/sbpl
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+)
 
-# support for cmake-config:
-configure_file(sbpl-config.cmake.in
-  "${PROJECT_BINARY_DIR}/InstallFiles/sbpl-config.cmake" @ONLY)
-configure_file(sbpl-config-version.cmake.in
-  "${PROJECT_BINARY_DIR}/InstallFiles/sbpl-config-version.cmake" @ONLY)
-install(FILES
-  "${PROJECT_BINARY_DIR}/InstallFiles/sbpl-config.cmake"
-  "${PROJECT_BINARY_DIR}/InstallFiles/sbpl-config-version.cmake"
-DESTINATION share/sbpl/)
-
-# support for build tree export
-option(SBPL_BUILD_TREE_EXPORT "Enable build tree exports" OFF)
-if (${SBPL_BUILD_TREE_EXPORT})
-    export(TARGETS sbpl FILE sbpl-targets.cmake)
-    set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src/include")
-    configure_file(
-        sbpl-config-tree-export.cmake.in 
-        "${PROJECT_BINARY_DIR}/sbpl-config.cmake" 
-        @ONLY)
-    export(PACKAGE sbpl)
-endif()
-
-install(DIRECTORY src/include/sbpl DESTINATION include
-	FILES_MATCHING PATTERN "*.h")
-install(TARGETS sbpl
-	LIBRARY DESTINATION lib)
 
 add_executable(test_sbpl src/test/main.cpp)
 target_link_libraries(test_sbpl sbpl)
