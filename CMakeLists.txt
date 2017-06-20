@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 PROJECT(sbpl)
 
 find_package(catkin REQUIRED COMPONENTS
+        roscpp
 )
 
 catkin_package(
@@ -11,7 +12,8 @@ catkin_package(
   #DEPENDS
 )
 
-include_directories(src/include)
+include_directories(${catkin_INCLUDE_DIRS} src/include)
+add_definitions(-DROS)
 
 add_library(sbpl SHARED
   src/discrete_space_information/environment_nav2D.cpp
@@ -35,6 +37,8 @@ add_library(sbpl SHARED
   src/utils/2Dgridsearch.cpp
   src/utils/config.cpp	
   )
+
+target_link_libraries(sbpl ${catkin_LIBRARIES})
 
 install(
   TARGETS sbpl
