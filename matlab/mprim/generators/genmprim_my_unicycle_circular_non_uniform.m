@@ -1,4 +1,4 @@
-function[] = genmprim_unicycle_circular_non_uniform (outfilename)
+function[] = genmprim_my_unicycle_circular_non_uniform (outfilename)
 % Generates circular motion primitives with min turning radius and saves them into a file.
 % For each angle from the list_of_angles array generates a set of 4 forward moving motion primitives 
 % and 4 symmetric backward moving motion primitives. 
@@ -69,7 +69,7 @@ fprintf(1, 'genmprim_unicycle_circular_non_uniform\n');
 % configuration parameters
 resolution =  0.1; %0.025; %0.1; 
 errmin = 0.05; %0.05;
-rmin_m = 3.0; %1.0; 
+rmin_m = 1.8; %1.0; 
 rmin_c = rmin_m/resolution;   
 fprintf(1, 'resolution=%f rmin_m=%f meters rmin_c=%f cells errmin=%f\n', resolution, rmin_m, rmin_c, errmin);
 
