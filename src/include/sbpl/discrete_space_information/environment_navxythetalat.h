@@ -123,6 +123,7 @@ struct EnvNAVXYTHETALATConfig_t
     int EndX_c;
     int EndY_c;
     int EndTheta;
+    int EndTolerance_c;
     unsigned char** Grid2D;
 
     std::vector<double> ThetaDirs;
@@ -555,7 +556,7 @@ public:
     /**
      * \brief sets goal tolerance. (Note goal tolerance is ignored currently)
      */
-    virtual void SetGoalTolerance(double tol_x, double tol_y, double tol_theta) { /**< not used yet */ }
+    virtual void SetGoalTolerance(double tol_x, double tol_y, double tol_theta);
 
     /**
      * \brief returns state coordinates of state with ID=stateID

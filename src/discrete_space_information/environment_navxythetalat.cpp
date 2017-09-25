@@ -1964,6 +1964,8 @@ bool EnvironmentNAVXYTHETALATTICE::InitializeEnv(
     EnvNAVXYTHETALATCfg.StartTheta_rad = starttheta;
     EnvNAVXYTHETALATCfg.EndTheta_rad = goaltheta;
 
+    EnvNAVXYTHETALATCfg.EndTolerance_c = __min(CONTXY2DISC(goaltol_x, EnvNAVXYTHETALATCfg.cellsize_m),
+                                               CONTXY2DISC(goaltol_y, EnvNAVXYTHETALATCfg.cellsize_m));
     // TODO - need to set the tolerance as well
 
     if (sMotPrimFile != NULL) {
@@ -2541,6 +2543,12 @@ int EnvironmentNAVXYTHETALAT::SetGoal(double x_m, double y_m, double theta_rad)
     EnvNAVXYTHETALATCfg.EndTheta = theta;
 
     return EnvNAVXYTHETALAT.goalstateid;
+}
+
+void EnvironmentNAVXYTHETALAT::SetGoalTolerance(double tol_x, double tol_y, double /*tol_theta*/)
+{
+  EnvNAVXYTHETALATCfg.EndTolerance_c = __min(CONTXY2DISC(tol_x, EnvNAVXYTHETALATCfg.cellsize_m),
+                                             CONTXY2DISC(tol_y, EnvNAVXYTHETALATCfg.cellsize_m));
 }
 
 // returns the stateid if success, and -1 otherwise
@@ -3157,6 +3165,7 @@ int EnvironmentNAVXYTHETALAT::GetGoalHeuristic(int stateID)
     int h2D = grid2Dsearchfromgoal->getlowerboundoncostfromstart_inmm(HashEntry->X, HashEntry->Y);
     int hEuclid = (int)(NAVXYTHETALAT_COSTMULT_MTOMM *
             EuclideanDistance_m(HashEntry->X, HashEntry->Y, EnvNAVXYTHETALATCfg.EndX_c, EnvNAVXYTHETALATCfg.EndY_c));
+    hEuclid = __max(hEuclid - EnvNAVXYTHETALATCfg.EndTolerance_c, hEuclid);
 
     // define this function if it is used in the planner (heuristic backward search would use it)
     return (int)(((double)__max(h2D, hEuclid)) / EnvNAVXYTHETALATCfg.nominalvel_mpersecs);
