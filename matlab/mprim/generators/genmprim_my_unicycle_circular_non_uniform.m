@@ -112,10 +112,10 @@ start_y = 0.0;
 
 %multipliers (multiplier is used as costmult*cost)
 forwardcostmult = 1;
-backwardcostmult = 5; 
-forwardandturncostmult = 2;
-backwardandturncostmult = 3;
-turninplacecostmult = 5;
+backwardcostmult = 9; 
+forwardandturncostmult = 3;
+backwardandturncostmult = 7;
+turninplacecostmult = 9;
 
 costmult = []
 if (has_turn_in_place_prims)
@@ -125,22 +125,23 @@ else
 end;    
 
 % list of angles increments in discrete units for the end pose of the primitive relative to the start pose
-prim_angle_increments = [0, 0, 1, -1];
+prim_angle_increments = zeros(1, numberofbaseangles + 1);
+prim_angle_increments(numberofbaseangles) = 1;
+prim_angle_increments(numberofbaseangles + 1) = -1;
 
-alfa = 26.56505118; 
+alfa = 45.0 / (numberofbaseangles - 1);
 alfa1 = alfa*100000000;
 beta = 90 - alfa;
 beta1 = beta*100000000;
 imax = has_backward_prims + 1;
 fprintf(1, 'alfa1=%f beta=%f beta1=%f imax=%d\n', alfa1, beta, beta1, imax);
-
-%list_of_angles (degrees): 0 26.5651 45.00 63.4349  90.00  116.5651  135.00  153.4349  180.00  206.5651  225.00  243.4349  270.00  296.5651  315.00  333.4349  360.00
-%list_of_angles (radians): 0 0.4538 0.7854 1.1170 1.5708 2.0246 2.3562 2.6878 3.1416 3.5954 3.9270  4.2586 4.7124 5.1662 5.4978  5.8294 6.2832
 fprintf(1, '*******************************\n');
 list_of_angles = zeros(1, numberofangles+1);
-list_of_angles(1:2:17) = (0:45:360);
-list_of_angles([2 6 10 14]) = list_of_angles([1 5 9 13]) + alfa;
-list_of_angles([4 8 12 16]) = list_of_angles([5 9 13 17]) - alfa;
+current_angular = 0.0;
+for angular_index = 1:numberofangles+1
+    list_of_angles(angular_index) = current_angular;
+    current_angular = current_angular + alfa;
+end;
 list_of_angles
 list_of_angles = list_of_angles .* pi/180;
 list_of_angles
@@ -167,9 +168,9 @@ basemprimendpts_c = zeros(numberofbaseangles, numberofprimsperangle, 6); % x_c, 
         
 % Calculate sets of valid primitives with ids 2,3,4 for base angles 0, alfa and 45 degrees. 
 % Primitives with id=1 (short forward) will be calculated by re-scaling primitives with id=2 (long forward).
-for angleind=1:3
-    for primind=2:4
-        if (angleind == 1 && primind == 4)
+for angleind=1:numberofbaseangles
+    for primind=2:numberofbaseangles+1
+        if (angleind == 1 && primind == numberofbaseangles+1)
             gen_base_prims(angleind, primind, xmin, xmax, -ymax, -ymin);
         else
             gen_base_prims(angleind, primind, xmin, xmax, ymin, ymax);
@@ -259,8 +260,13 @@ for angleind = 1:numberofangles
             rvel = mprimendpts_c(6);
             fprintf(1, 'alfa angle=%f\n', angle);
         else
-            fprintf(1, 'ERROR: invalid angular resolution. angle = %d\n', currentangle_36000int);
-            return;
+            % fprintf(1, 'ERROR: invalid angular resolution. angle = %d\n', currentangle_36000int);
+            % return;
+            mprimendpts_c = basemprimendpts_c(1, primind,:);
+            angle = currentangle;
+            turning_radius = mprimendpts_c(5);
+            rvel = mprimendpts_c(6);
+            fprintf(1, '0000  angle=%f\n', angle);
         end;
         
         [res, turning_radius_center] = generate_intermediate_poses(angleind, primind, currentangle, angle, rvel, turning_radius, mprimendpts_c);
@@ -416,7 +422,7 @@ function[] = find_best_prims()
     % with minimal turning radius among selected set of primitives that
     % satisfy the given min turning radius and epsilon conditions.
     
-    [rmin0, countmin] = min(abs(primdata(1, 4, 1:primcount(1, 4), 7)));
+    [rmin0, countmin] = min(abs(primdata(1, numberofbaseangles+1, 1:primcount(1, numberofbaseangles+1), 7)));
     fprintf(1, 'countmin=%f rmin0=%f\n', countmin, rmin0);
    
     %Iterate over all saved motion primitives for all angles and for each
@@ -425,15 +431,15 @@ function[] = find_best_prims()
     rrm = rmin0;
     %rrm = 30.0;
     %rad = [];
-    
+       
     for angle_id=1:numberofbaseangles
     
         fprintf(1, '*************  angle_id=%f  *********\n', angle_id);
     
-        i1 = number_of_base_prims_per_angle + 3;  %7;
-        i2 = number_of_base_prims_per_angle + 4;  %8;
+        i1 = number_of_base_prims_per_angle + numberofbaseangles;  %7;
+        i2 = number_of_base_prims_per_angle + numberofbaseangles + 1;  %8;
         
-        for prim_ind = [3,4,i1,i2] %4:-1:3
+        for prim_ind = [numberofbaseangles,numberofbaseangles + 1,i1,i2] %4:-1:3
             if (has_backward_prims == 0 && prim_ind > number_of_base_prims_per_angle)  %>4
                 continue;
             end
@@ -454,11 +460,12 @@ function[] = find_best_prims()
             
             [dmin, countmin] = min(abs(abs(primdata(angle_id, prim_ind, 1:primcount(angle_id, prim_ind), 7)) - rrm));
             fprintf(1, 'countmin=%f dmin=%f\n', countmin, dmin);
-        
+                    
             tvoverrv = primdata(angle_id, prim_ind, countmin, 7);
             %rad(angle_id, prim_ind) = abs(tvoverrv);
             
             rv = primdata(angle_id, prim_ind, countmin, 6) - primdata(angle_id, prim_ind, countmin, 3);
+            
             tv = rv*tvoverrv;
             fprintf(1, 'tvoverrv=%f rv=%f tv=%f\n', tvoverrv, rv, tv);
 
@@ -472,7 +479,7 @@ function[] = find_best_prims()
            
         for i = 1:imax
             %prim_ind = 2; %long forward
-            prim_ind = 2 + (i-1)*number_of_base_prims_per_angle;  %4;
+            prim_ind = numberofbaseangles - 1 + (i-1)*number_of_base_prims_per_angle;  %4;
             fprintf(1, '-------------  prim_ind=%f  -----------\n', prim_ind); 
             i1 = prim_ind+1;
             i2 = prim_ind+2;
@@ -501,11 +508,11 @@ function[] = find_best_prims()
             
             %prim_ind = 5; %short forward
             if (has_turn_in_place_prims == 1)
-                prim_ind = 5 + (i-1)*number_of_base_prims_per_angle;
+                prim_ind = numberofbaseangles + 2 + (i-1)*number_of_base_prims_per_angle;
                 fprintf(1, '-------------  prim_ind=%f  -----------\n', prim_ind); 
                 basemprimendpts_c(angle_id, prim_ind, 1) = 0.0;
                 basemprimendpts_c(angle_id, prim_ind, 2) = 0.0; 
-                if (prim_ind == 5)
+                if (prim_ind == numberofbaseangles + 2)
                     i1 = prim_ind-2;
                 else
                     i1 = prim_ind-1;
@@ -523,6 +530,13 @@ end
 function[res, turning_radius_center] = generate_intermediate_poses(angleind, primind, currentangle, angle, rvel, turning_radius, mprimendpts_c)
       
     baseendpose_c = mprimendpts_c(1:3);
+    
+    for index = 1:3
+        if isnan(baseendpose_c(index))
+            baseendpose_c(index) = 0;
+        end;
+    end;
+    
     endtheta_c = rem(angleind - 1 + baseendpose_c(3), numberofangles);
    
     fprintf(1,'\n');
@@ -548,6 +562,11 @@ function[res, turning_radius_center] = generate_intermediate_poses(angleind, pri
     else
         numofsamples = floor(dist_m/interm_spacing_c) + 1;
     end;
+    
+    if dist_m == 0 && dist_rad == 0
+        numofsamples = 1;
+    end;
+    
     %numofsamples = 1 + max(round(dist_m/interm_spacing_m), abs(round(dist_rad/interm_spacing_rad)));
     fprintf(1, 'endx_c=%f endy_c=%f endtheta_c=%d turning_radius=%f rvel=%f transformation angle=%f end_angle=%f numofsamples=%d dist_m=%f dist_rad=%f\n', endx_c, endy_c, endtheta_c, turning_radius, rvel, angle*180/pi, end_angle, numofsamples, dist_m, dist_rad);
     numofsamples0(primind) = numofsamples;
